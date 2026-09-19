@@ -120,6 +120,44 @@ class MockAgent(BaseAgent):
         )
 
 
+class MessageOnlyAgent(MockAgent):
+    """Agent whose run_stream yields Messages but never an AgentResponse.
+
+    Exercises the orchestrator's fallback AgentResponse construction.
+    """
+
+    async def run_stream(  # type: ignore[override]
+        self,
+        task: Union[str, UserMessage, List[Message]],
+        cancellation_token: Optional[CancellationToken] = None,
+        verbose: bool = False,
+        stream_tokens: bool = False,
+    ) -> AsyncGenerator[Union[Message, AgentResponse], None]:
+        yield UserMessage(content="context", source="user")
+        yield AssistantMessage(content=self.response_text, source=self.name)
+
+
+@pytest.mark.asyncio
+async def test_round_robin_orchestrator_fallback_preserves_messages():
+    """Fallback AgentResponse must carry streamed messages into shared state.
+
+    Regression: fallback used to pass messages=... (not an AgentResponse
+    field), so pydantic silently dropped them and shared state stayed empty.
+    """
+    agent = MessageOnlyAgent("agent1", "Fallback answer")
+    orchestrator = RoundRobinOrchestrator(
+        [agent], MaxMessageTermination(max_messages=3)
+    )
+
+    result = await orchestrator.run("Trigger fallback")
+
+    assistant_contents = [
+        msg.content for msg in result.messages if isinstance(msg, AssistantMessage)
+    ]
+    assert "Fallback answer" in assistant_contents
+    assert any(msg.content == "Fallback answer" for msg in orchestrator.shared_messages)
+
+
 @pytest.mark.asyncio
 async def test_round_robin_orchestrator_basic():
     """Test basic round-robin orchestration."""

@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from ..agents import BaseAgent
 from ..cancellation_token import CancellationToken
 from ..component_config import ComponentBase
+from ..context import AgentContext
 from ..messages import Message, UserMessage
 from ..termination import BaseTermination
 from ..types import (
@@ -272,7 +273,7 @@ class BaseOrchestrator(ComponentBase[BaseModel], ABC):
                     # Create fallback result from collected messages
                     result = AgentResponse(
                         source=next_agent.name,
-                        messages=agent_messages,
+                        context=AgentContext(messages=agent_messages),
                         usage=Usage(duration_ms=0, llm_calls=0),
                         finish_reason="completed_without_response",
                     )
