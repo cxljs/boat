@@ -1,7 +1,146 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "boat"
 version = "0.1.0"
-description = "A multi-agent framework"
+description = "A minimal multi-agent framework"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "pydantic>=2.0.0",
+    "openai==1.107.1",
+    "typing-extensions>=4.0.0",
+    "requests>=2.25.0",
+    "tiktoken>=0.8.0",
+]
+
+[project.optional-dependencies]
+persist = [
+    "sqlmodel>=0.0.16",
+    "aiosqlite>=0.20.0",
+]
+web = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "sqlmodel>=0.0.16",
+    "aiosqlite>=0.20.0",
+]
+rag = [
+    "chromadb>=0.4.0",
+]
+otel = [
+    "opentelemetry-api~=1.38.0",
+    "opentelemetry-sdk~=1.38.0",
+    "opentelemetry-exporter-otlp-proto-http~=1.38.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov",
+    "mypy",
+    "pyright",
+    "ruff>=0.8.0",
+    "poethepoet",
+]
+mcp = [
+    "mcp>=2.0.0",
+]
+all = [
+    "boat[web]",
+    "boat[rag]",
+    "boat[mcp]",
+]
+
+[project.scripts]
+boat = "boat.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/boat"]
+exclude = [
+    "src/boat/webui/frontend",
+    "src/boat/webui/frontend/**/*"
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+]
+exclude = [
+    "/src/boat/webui/frontend",
+    "/src/boat/webui/frontend/**/*"
+]
+
+[tool.pyright]
+include = ["src"]
+exclude = ["**/__pycache__"]
+reportMissingImports = true
+reportMissingTypeStubs = false
+# Let Ruff own these lint rules (F401/F841/F821); Pylance/pyright would duplicate them
+reportUnusedImport = "none"
+reportUnusedVariable = "none"
+reportUndefinedVariable = "none"
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+# Strict mode escalates these to "error"; keep them off
+reportUnknownMemberType = "none"
+reportArgumentType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportMissingParameterType = "none"
+reportUnknownLambdaType = "none"
+reportConstantRedefinition = "none"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+extend-exclude = ["src/boat/webui/frontend"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+# E501: code line length is enforced by `ruff format`; long docstrings/strings
+# are pre-existing and left alone (same as the old black-era behavior).
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+# Keep `import X as X` re-exports in a single from-import (memory optional deps)
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+# Forward-reference imports must follow model definitions (circular-import workaround)
+"src/boat/types.py" = ["E402"]
+
+[tool.poe.tasks]
+# Type checking
+mypy = "mypy src/ --show-error-codes --ignore-missing-imports"
+pyright = "pyright src/"
+
+# Testing
+test = "pytest tests/ -v"
+test-cov = "pytest tests/ --cov=src/boat --cov-report=term-missing"
+
+# Code quality
+format = "ruff format src/ tests/"
+lint = "ruff check src/ tests/"
+
+# Run all checks
+check = ["mypy", "pyright", "lint", "test"]

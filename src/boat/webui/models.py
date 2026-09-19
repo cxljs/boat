@@ -1,0 +1,108 @@
+"""
+Minimal WebUI-specific models - reuse Boat types everywhere else!
+"""
+
+from datetime import datetime
+from typing import Any, List, Optional, Union
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class EntityInfo(BaseModel):
+    """WebUI-specific: Discovery metadata for entities."""
+
+    id: str = Field(description="Unique identifier for the entity")
+    name: Optional[str] = Field(default=None, description="Human-readable name")
+    description: Optional[str] = Field(default=None, description="Entity description")
+    type: str = Field(description="Entity type (agent, orchestrator)")
+    source: str = Field(description="Source of discovery (directory, memory)")
+    module_path: Optional[str] = Field(
+        default=None, description="Path to the Python module"
+    )
+    tools: List[str] = Field(
+        default_factory=list, description="Available tools/functions"
+    )
+    has_env: bool = Field(False, description="Whether .env file exists")
+    instructions: Optional[str] = Field(
+        default=None, description="System prompt / instructions driving the entity"
+    )
+    example_tasks: List[str] = Field(
+        default_factory=list,
+        description="Example tasks to help users discover capabilities",
+    )
+
+
+class AgentInfo(EntityInfo):
+    """WebUI-specific: Agent discovery metadata."""
+
+    type: str = Field(default="agent", description="Always 'agent'")
+    model: Optional[str] = Field(default=None, description="LLM model being used")
+    memory_type: Optional[str] = Field(
+        default=None, description="Type of memory system"
+    )
+
+
+class OrchestratorInfo(EntityInfo):
+    """WebUI-specific: Orchestrator discovery metadata."""
+
+    type: str = Field(default="orchestrator", description="Always 'orchestrator'")
+    orchestrator_type: str = Field(
+        description="Type of orchestrator (round_robin, ai, plan)"
+    )
+    agents: List[str] = Field(
+        default_factory=list, description="Participating agent names"
+    )
+    termination_conditions: List[str] = Field(
+        default_factory=list, description="Active termination conditions"
+    )
+
+
+# Union type for all entity discovery info
+Entity = Union[AgentInfo, OrchestratorInfo]
+
+
+class WebUIStreamEvent(BaseModel):
+    """WebUI-specific: Wrapper for Boat events with session context."""
+
+    session_id: str = Field(description="Session this event belongs to")
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="Event timestamp"
+    )
+    event: Any = Field(description="The actual Boat event (AgentEvent, Message, etc.)")
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class HealthResponse(BaseModel):
+    """WebUI-specific: Health check response."""
+
+    status: str = Field(description="Health status")
+    version: str = Field("", description="boat version serving this UI")
+    entities_dir: Optional[str] = Field(
+        default=None, description="Directory being scanned"
+    )
+    entities_count: int = Field(0, description="Number of discovered entities")
+    persistence_enabled: bool = Field(
+        False, description="Whether run/eval persistence is available"
+    )
+    mcp_available: bool = Field(
+        False, description="Whether the MCP playground is available"
+    )
+
+
+class AddExampleRequest(BaseModel):
+    """Request to add an example from GitHub."""
+
+    example_id: str = Field(
+        description="Example identifier (e.g., 'basic-agent', 'round-robin')"
+    )
+    github_path: str = Field(
+        description="Path to example file in GitHub repo (e.g., 'examples/agents/basic-agent.py')"
+    )
+
+
+# For API requests, use Boat types directly:
+# - Use boat.messages.Message for chat messages
+# - Use boat.types.AgentResponse for responses
+# - Use boat.types.AgentEvent for events
+# - Use List[Message] for message lists
