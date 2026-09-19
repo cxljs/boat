@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChatBase } from "@/components/shared/chat-base";
 import { SessionSwitcher } from "@/components/shared/session-switcher";
-import { ExampleTasksDisplay } from "@/components/shared/example-tasks-display";
 import { ContextInspector } from "@/components/shared/context-inspector";
 import { Users, Bot, MessageSquare, StopCircle, ArrowUp, ArrowDown, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import { apiClient } from "@/services/api";
@@ -17,7 +16,6 @@ import { useEntityExecution } from "@/hooks/useEntityExecution";
 import { OrchestratorMessageHandler } from "@/hooks/messageHandlers";
 import type {
   OrchestratorInfo,
-  Message,
   StreamEvent,
   SessionInfo,
 } from "@/types";
@@ -231,22 +229,6 @@ export function OrchestratorView({
           placeholder={`Start a conversation with ${selectedOrchestrator.agents.length} agents via ${selectedOrchestrator.orchestrator_type} orchestration...`}
           emptyStateTitle="Multi-Agent Orchestration"
           emptyStateDescription={`This orchestrator will coordinate conversations between ${selectedOrchestrator.agents.join(", ")} using ${selectedOrchestrator.orchestrator_type} pattern.`}
-          emptyStateCustom={
-            selectedOrchestrator.example_tasks && selectedOrchestrator.example_tasks.length > 0 ? (
-              <ExampleTasksDisplay
-                tasks={selectedOrchestrator.example_tasks}
-                entityName={selectedOrchestrator.name || selectedOrchestrator.id}
-                onTaskClick={(task) => {
-                  const userMessage: Message = {
-                    role: "user",
-                    content: task,
-                    source: "user",
-                  };
-                  handleSendMessage([userMessage]);
-                }}
-              />
-            ) : null
-          }
         />
 
         {/* Context Inspector */}

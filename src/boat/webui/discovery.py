@@ -428,7 +428,6 @@ class BoatScanner:
         )
         agents = [agent.name for agent in getattr(orchestrator, "agents", [])]
         termination_conditions = self._extract_termination_conditions(orchestrator)
-        example_tasks = getattr(orchestrator, "example_tasks", [])
 
         return OrchestratorInfo(
             **common_attrs,
@@ -437,7 +436,6 @@ class BoatScanner:
             agents=agents,
             termination_conditions=termination_conditions,
             tools=[],  # Orchestrators don't have direct tools
-            example_tasks=example_tasks,
         )
 
     def _extract_agent_tools(self, agent: Any) -> List[str]:
