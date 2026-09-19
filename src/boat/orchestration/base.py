@@ -405,15 +405,8 @@ class BaseOrchestrator(ComponentBase[BaseModel], ABC):
             return [UserMessage(content=task, source="user")]
         elif isinstance(task, UserMessage):
             return [task]
-        elif isinstance(task, list):
-            return task
         else:
-            # Fallback for any other message type
-            return (
-                [task]
-                if hasattr(task, "content")
-                else [UserMessage(content=str(task), source="user")]
-            )
+            return task
 
     def _extract_new_messages(
         self,
